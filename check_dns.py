@@ -34,6 +34,15 @@ class DNSSECContext(nagiosplugin.Context):
         return nagiosplugin.Result(nagiosplugin.Ok, 'Delegation is SECURE', metric)
 
 
+class RRSIGContext(nagiosplugin.Context):
+    def evaluate(self, metric, resource):
+        if metric.value['errors']:
+            return nagiosplugin.Result(nagiosplugin.Critical, 'RRSIG error', metric)
+        if metric.value['warnings']:
+            return nagiosplugin.Result(nagiosplugin.Warn, 'RRSIG issue', metric)
+        return nagiosplugin.Result(nagiosplugin.Ok, 'RRSIGs are good', metric)
+
+
 class DNS(nagiosplugin.Resource):
     def __init__(self, domain, insecure_ok=True):
         self.domain = domain
@@ -76,20 +85,31 @@ class DNS(nagiosplugin.Resource):
 
         # These errors are linked to the DS record
         delegation_status = analysis_obj.delegation_status[43]
-        delegation_warnings = [x.description for x in analysis_obj.delegation_warnings[43]]
+        delegation_warnings = [w.description for w in analysis_obj.delegation_warnings[43]]
         delegation_errors = [e.description for e in analysis_obj.delegation_errors[43]]
 
         zone_status = analysis_obj.zone_status
         zone_warnings = [w.description for w in analysis_obj.zone_warnings]
         zone_errors = [e.description for e in analysis_obj.zone_errors]
 
-        status = {
+        dnssec_status = {
             'dnssec': {'status': zone_status, 'warnings': zone_warnings, 'errors': zone_errors},
             'delegation': {'status': delegation_status,
                            'warnings': delegation_warnings,
                            'errors': delegation_errors},
         }
-        yield nagiosplugin.Metric('dnssec_status', status, context='dnssec')
+        yield nagiosplugin.Metric('dnssec_status', dnssec_status, context='dnssec')
+
+        rrsig_errors = set()
+        rrsig_warnings = set()
+        for _, rrsigs in analysis_obj.rrsig_status.iteritems():
+            for _, rrsets in rrsigs.iteritems():
+                for keymeta, single_rrsig_status in rrsets.iteritems():
+                    for w in single_rrsig_status.warnings:
+                        rrsig_warnings.add('{}: {}'.format(keymeta, w.description))
+                    for e in single_rrsig_status.errors:
+                        rrsig_errors.add('{}: {}'.format(keymeta, e.description))
+        yield nagiosplugin.Metric('rrsig_status', {'errors': rrsig_errors, 'warnings': rrsig_warnings}, context='rrsig')
 
 
 class DNSSummary(nagiosplugin.Summary):
@@ -97,16 +117,25 @@ class DNSSummary(nagiosplugin.Summary):
         ret = []
         for result in results:
             if result.metric.name == 'dnssec_status':
-                if result.metric.name == 'dnssec_status':
-                    to_add = ''
-                    for t in ['dnssec', 'delegation']:
-                        for m in ['errors', 'warnings']:
-                            if result.metric.value.get(t, {}).get(m):
-                                to_add += ', '.join(result.metric.value.get(t, {}).get(m))
-                    if to_add != '':
-                        ret.append('{}: {}'.format(result.hint, to_add))
-                    else:
-                        ret.append(result.hint)
+                to_add = ''
+                for t in ['dnssec', 'delegation']:
+                    for m in ['errors', 'warnings']:
+                        if result.metric.value.get(t, {}).get(m):
+                            to_add += ', '.join(result.metric.value.get(t, {}).get(m))
+                if to_add != '':
+                    ret.append('{}: {}'.format(result.hint, to_add))
+                else:
+                    ret.append(result.hint)
+
+            if result.metric.name == 'rrsig_status':
+                to_add = ''
+                for m in ['errors', 'warnings']:
+                    if result.metric.value.get(m):
+                        to_add += ', '.join(result.metric.value.get(m))
+                if to_add != '':
+                    ret.append('{}: {}'.format(result.hint, to_add))
+                else:
+                    ret.append(result.hint)
         return '; '.join(ret)
 
     def problem(self, results):
@@ -118,6 +147,15 @@ class DNSSummary(nagiosplugin.Summary):
                     for m in ['errors', 'warnings']:
                         if result.metric.value.get(t, {}).get(m):
                             to_add += ', '.join(result.metric.value.get(t, {}).get(m))
+                if to_add != '':
+                    ret.append('{}: {}'.format(result.hint, to_add))
+                else:
+                    ret.append(result.hint)
+            if result.metric.name == 'rrsig_status':
+                to_add = ''
+                for m in ['errors', 'warnings']:
+                    if result.metric.value.get(m):
+                        to_add += ', '.join(result.metric.value.get(m))
                 if to_add != '':
                     ret.append('{}: {}'.format(result.hint, to_add))
                 else:
@@ -135,6 +173,7 @@ def main():
     check = nagiosplugin.Check(
         DNS(args.domain, args.insecure_is_ok),
         DNSSECContext('dnssec'),
+        RRSIGContext('rrsig'),
         DNSSummary())
     check.main(args.verbose)
 
