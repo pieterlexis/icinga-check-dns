@@ -63,6 +63,7 @@ class RRSIGExpitationContext(nagiosplugin.Context):
 class DNS(nagiosplugin.Resource):
     def __init__(self, domain, insecure_ok=True, rrsig_expiration_warn=72, rrsig_expiration_crit=24):
         self.domain = domain
+        self.domain_native = dns.name.from_text(self.domain)
         self.insecure_ok = insecure_ok
         self.rrsig_expiration_warn = rrsig_expiration_warn
         self.rrsig_expiration_crit = rrsig_expiration_crit
@@ -86,7 +87,7 @@ class DNS(nagiosplugin.Resource):
                                               self.query_class_mixin, self.ceiling, self.edns_diagnostics,
                                               self.stop_at_explicit, self.cache_level, self.rdtypes,
                                               self.explicit_only, self.dlv_domain)
-        names = [dns.name.from_text(self.domain)]
+        names = [self.domain_native]
         name_objs = a.analyze(names)
         name_objs = [x for x in name_objs if x is not None]
         if len(name_objs) > 1:
@@ -126,6 +127,8 @@ class DNS(nagiosplugin.Resource):
         for _, rrsigs in analysis_obj.rrsig_status.iteritems():
             for rrsig, rrsets in rrsigs.iteritems():
                 for keymeta, single_rrsig_status in rrsets.iteritems():
+                    if keymeta.name != self.domain_native:
+                        continue
                     for w in single_rrsig_status.warnings:
                         rrsig_warnings.add('{}: {}'.format(keymeta, w.description))
                     for e in single_rrsig_status.errors:
