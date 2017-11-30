@@ -1,0 +1,2 @@
+include check_dns.py
+include requirements.txt
