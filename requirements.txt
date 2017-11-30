@@ -1,4 +1,4 @@
 dnsviz>=0.6.5
 dnspython>=1.15.0
-M2Crypto>=0.27.0
+M2Crypto>=0.24.0
 nagiosplugin>=1.2.4
