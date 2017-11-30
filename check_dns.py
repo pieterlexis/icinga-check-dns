@@ -52,6 +52,8 @@ class RRSIGExpitationContext(nagiosplugin.Context):
 
     def evaluate(self, metric, resource):
         r_state = nagiosplugin.Ok
+        if metric.value is None:
+            return nagiosplugin.Result(r_state, 'No RRSIGs', metric)
         if self.warn_seconds >= metric.value:
             r_state = nagiosplugin.Warn
         if self.crit_seconds >= metric.value:
