@@ -70,6 +70,7 @@ class DNS(nagiosplugin.Resource):
         self.rrsig_expiration_warn = rrsig_expiration_warn
         self.rrsig_expiration_crit = rrsig_expiration_crit
 
+        self.rdclass = dns.rdataclass.IN
         self.try_ipv4 = True
         self.try_ipv6 = True
         self.client_ipv4 = None
@@ -85,7 +86,7 @@ class DNS(nagiosplugin.Resource):
 
     def probe(self):
         _log.debug('Starting probing for "{}"'.format(self.domain))
-        a = dnsviz.commands.probe.BulkAnalyst(self.try_ipv4, self.try_ipv6, self.client_ipv4, self.client_ipv6,
+        a = dnsviz.commands.probe.BulkAnalyst(self.rdclass, self.try_ipv4, self.try_ipv6, self.client_ipv4, self.client_ipv6,
                                               self.query_class_mixin, self.ceiling, self.edns_diagnostics,
                                               self.stop_at_explicit, self.cache_level, self.rdtypes,
                                               self.explicit_only, self.dlv_domain)
