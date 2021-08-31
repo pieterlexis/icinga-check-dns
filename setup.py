@@ -1,6 +1,6 @@
 import os
 from setuptools import setup, find_packages
-from pkg_resources import parse_requirements
+from pip._internal.req import parse_requirements
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -10,7 +10,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 # Parse requirements.txt
-install_reqs=[str(ir.req) for ir in parse_requirements('./requirements.txt')]
+install_reqs=[str(ir.req) for ir in parse_requirements('./requirements.txt', session=False)]
 
 setup(
     name="icinga-check-dns",
