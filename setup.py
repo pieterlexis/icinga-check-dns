@@ -10,7 +10,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 # Parse requirements.txt
-install_reqs=[str(ir.req) for ir in parse_requirements('./requirements.txt', session=False)]
+install_reqs=[str(ir) for ir in parse_requirements('./requirements.txt', session=False)]
 
 setup(
     name="icinga-check-dns",
