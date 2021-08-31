@@ -1,6 +1,6 @@
 import os
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
+from pkg_resources import parse_requirements
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
