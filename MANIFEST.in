@@ -1,2 +1,1 @@
-include check_dns.py
-include requirements.txt
+include icinga_check_dns.py
