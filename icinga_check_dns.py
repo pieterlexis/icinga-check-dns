@@ -274,12 +274,14 @@ def main():
     )
     argp.add_argument(
         "--expire-warn",
+        type=int,
         default=72,
         metavar="HOURS",
         help="Warn if RRSIG expiry is within this many hours",
     )
     argp.add_argument(
         "--expire-crit",
+        type=int,
         default=48,
         metavar="HOURS",
         help="Crit if RRSIG expiry is within this many hours",
