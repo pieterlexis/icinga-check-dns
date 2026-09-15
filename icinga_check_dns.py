@@ -3,7 +3,6 @@
 # Copyright 2017 Pieter Lexis <pieter.lexis@powerdns.com>
 # Licensed under the GPL version 2, see LICENSE for more.
 
-from __future__ import print_function, absolute_import
 import argparse
 import time
 from collections import OrderedDict
@@ -46,7 +45,7 @@ class RRSIGContext(nagiosplugin.Context):
 
 class RRSIGExpitationContext(nagiosplugin.Context):
     def __init__(self, name, warn_seconds, crit_seconds, fmt_metric=None, result_cls=nagiosplugin.Result):
-        super(RRSIGExpitationContext, self).__init__(name, fmt_metric, result_cls)
+        super().__init__(name, fmt_metric, result_cls)
         self.warn_seconds = warn_seconds
         self.crit_seconds = crit_seconds
 
@@ -127,9 +126,9 @@ class DNS(nagiosplugin.Resource):
         rrsig_warnings = set()
         rrsig_expiration = None
         now = int(time.time())
-        for _, rrsigs in analysis_obj.rrsig_status.iteritems():
-            for rrsig, rrsets in rrsigs.iteritems():
-                for keymeta, single_rrsig_status in rrsets.iteritems():
+        for _, rrsigs in analysis_obj.rrsig_status.items():
+            for rrsig, rrsets in rrsigs.items():
+                for keymeta, single_rrsig_status in rrsets.items():
                     if keymeta.name != self.domain_native:
                         continue
                     for w in single_rrsig_status.warnings:
