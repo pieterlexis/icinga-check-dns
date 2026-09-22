@@ -1,0 +1,53 @@
+[project]
+name= "icinga-check-dns"
+version = "0.0.1"
+description  = "Icinga/Nagios check that uses dnsviz to check many parameters"
+keywords = ["DNS",  "dnsviz",  "Nagios",  "Icinga", "check" ]
+authors = [
+    {name = "Pieter Lexis", email = "pieter.lexis@powerdns.com"}
+]
+readme = "README.md"
+license = "GPL-2.0-only"
+license-files = [
+    "LICENSE"
+]
+classifiers = [
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "dnsviz>=0.11.0",
+    "dnspython>=2.0.0",
+    "cryptography>=0.10.0",
+    "nagiosplugin>=1.4.0",
+]
+requires-python = ">=3.6"
+
+[project.urls]
+Homepage = "https://github.com/pieterlexis/icinga-check-dns"
+Repository = "https://github.com/pieterlexis/icinga-check-dns"
+Issues = "https://github.com/pieterlexis/icinga-check-dns/issues"
+
+[project.scripts]
+"check_dns.py" = "icinga_check_dns:main"
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "W", "C", "RET", "UP", "I"]
+ignore = ["F403", "C901"]
+preview = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[build-system]
+requires = ['setuptools']
+build-backend = 'setuptools.build_meta'
