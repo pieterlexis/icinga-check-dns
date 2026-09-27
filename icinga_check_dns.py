@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # Copyright 2017 Pieter Lexis <pieter.lexis@powerdns.com>
 # Licensed under the GPL version 2, see LICENSE for more.
