@@ -1,6 +1,6 @@
 [project]
 name= "icinga-check-dns"
-version = "0.0.1"
+version = "0.0.4"
 description  = "Icinga/Nagios check that uses dnsviz to check many parameters"
 keywords = ["DNS",  "dnsviz",  "Nagios",  "Icinga", "check" ]
 authors = [
