@@ -51,7 +51,26 @@ class RRSIGContext(nagiosplugin.Context):
         return nagiosplugin.Result(nagiosplugin.Ok, "RRSIGs validate correctly", metric)
 
 
-class RRSIGExpitationContext(nagiosplugin.Context):
+class RRSetContext(nagiosplugin.Context):
+    def evaluate(self, metric, resource):
+        if metric.value["errors"]:
+            return nagiosplugin.Result(nagiosplugin.Critical, "RRSet error", metric)
+        if metric.value["warnings"]:
+            return nagiosplugin.Result(nagiosplugin.Warn, "RRSet warning", metric)
+        return nagiosplugin.Result(nagiosplugin.Ok, "RRSets validate correctly", metric)
+
+
+class NXDOMAINContext(nagiosplugin.Context):
+    def evaluate(self, metric, resource):
+        if metric.value["errors"]:
+            return nagiosplugin.Result(nagiosplugin.Critical, "NXDOMAIN error", metric)
+        if metric.value["warnings"]:
+            return nagiosplugin.Result(nagiosplugin.Warn, "NXDOMAIN warning", metric)
+        return nagiosplugin.Result(
+            nagiosplugin.Ok, "NXDOMAINs validate correctly", metric
+        )
+
+
 class RRSIGExpirationContext(nagiosplugin.Context):
     def __init__(
         self,
@@ -104,8 +123,8 @@ class DNS(nagiosplugin.Resource):
         self.edns_diagnostics = False
         self.stop_at_explicit = {}
         self.cache_level = None
-        self.rdtypes = None
-        self.explicit_only = False  # set to true if rdtypes is set
+        self.extra_rdtypes = None
+        self.explicit_only = False
         self.dlv_domain = None
 
     def probe(self):
@@ -121,7 +140,7 @@ class DNS(nagiosplugin.Resource):
             self.edns_diagnostics,
             self.stop_at_explicit,
             self.cache_level,
-            self.rdtypes,
+            self.extra_rdtypes,
             self.explicit_only,
             self.dlv_domain,
         )
@@ -171,10 +190,53 @@ class DNS(nagiosplugin.Resource):
         }
         yield nagiosplugin.Metric("dnssec_status", dnssec_status, context="dnssec")
 
+        rrset_errors = set()
+        rrset_warnings = set()
+
+        for keymeta, warnings in analysis_obj.rrset_warnings.items():
+            if warnings:
+                for warning in warnings:
+                    rrset_warnings.add(f"{keymeta}: {warning.description}")
+        for keymeta, errors in analysis_obj.rrset_errors.items():
+            if errors:
+                for error in errors:
+                    rrset_errors.add(f"{keymeta}: {error.description}")
+
+        yield nagiosplugin.Metric(
+            "rrset_status",
+            {
+                "errors": rrset_errors,
+                "warnings": rrset_warnings,
+            },
+            context="rrset",
+        )
+
+        nxdomain_errors = set()
+        nxdomain_warnings = set()
+
+        for keymeta, warnings in analysis_obj.nxdomain_warnings.items():
+            if warnings:
+                for warning in warnings:
+                    nxdomain_warnings.add(f"{keymeta}: {warning.description}")
+        for keymeta, errors in analysis_obj.nxdomain_errors.items():
+            if errors:
+                for error in errors:
+                    nxdomain_errors.add(f"{keymeta}: {error.description}")
+
+        yield nagiosplugin.Metric(
+            "nxdomain_status",
+            {
+                "errors": nxdomain_errors,
+                "warnings": nxdomain_warnings,
+            },
+            context="nxdomain",
+        )
+
         rrsig_errors = set()
         rrsig_warnings = set()
         rrsig_expiration = None
         now = int(time.time())
+
         for _, rrsigs in analysis_obj.rrsig_status.items():
             for rrsig, rrsets in rrsigs.items():
                 for keymeta, single_rrsig_status in rrsets.items():
@@ -222,6 +284,26 @@ class DNSSummary(nagiosplugin.Summary):
                 else:
                     ret.append(result.hint)
 
+            if result.metric.name == "rrset_status":
+                to_add = ""
+                for m in ["errors", "warnings"]:
+                    if result.metric.value.get(m):
+                        to_add += ", ".join(result.metric.value.get(m))
+                if to_add != "":
+                    ret.append(f"{result.hint}: {to_add}")
+                else:
+                    ret.append(result.hint)
+
+            if result.metric.name == "nxdomain_status":
+                to_add = ""
+                for m in ["errors", "warnings"]:
+                    if result.metric.value.get(m):
+                        to_add += ", ".join(result.metric.value.get(m))
+                if to_add != "":
+                    ret.append(f"{result.hint}: {to_add}")
+                else:
+                    ret.append(result.hint)
+
             if result.metric.name == "rrsig_expiration":
                 ret.append(result.hint)
 
@@ -240,6 +322,7 @@ class DNSSummary(nagiosplugin.Summary):
                     ret.append(f"{result.hint}: {to_add}")
                 else:
                     ret.append(result.hint)
+
             if result.metric.name == "rrsig_status":
                 to_add = ""
                 for m in ["errors", "warnings"]:
@@ -249,8 +332,30 @@ class DNSSummary(nagiosplugin.Summary):
                     ret.append(f"{result.hint}: {to_add}")
                 else:
                     ret.append(result.hint)
+
+            if result.metric.name == "rrset_status":
+                to_add = ""
+                for m in ["errors", "warnings"]:
+                    if result.metric.value.get(m):
+                        to_add += ", ".join(result.metric.value.get(m))
+                if to_add != "":
+                    ret.append(f"{result.hint}: {to_add}")
+                else:
+                    ret.append(result.hint)
+
+            if result.metric.name == "nxdomain_status":
+                to_add = ""
+                for m in ["errors", "warnings"]:
+                    if result.metric.value.get(m):
+                        to_add += ", ".join(result.metric.value.get(m))
+                if to_add != "":
+                    ret.append(f"{result.hint}: {to_add}")
+                else:
+                    ret.append(result.hint)
+
             if result.metric.name == "rrsig_expiration":
                 ret.append(result.hint)
+
         return "; ".join(ret)
 
 
@@ -300,6 +405,8 @@ def main():
         DNS(args.domain, args.insecure_is_ok),
         DNSSECContext("dnssec"),
         RRSIGContext("rrsig"),
+        RRSetContext("rrset"),
+        NXDOMAINContext("nxdomain"),
         RRSIGExpirationContext(
             "rrsig_expiration",
             warn_seconds=args.expire_warn * 60 * 60,
