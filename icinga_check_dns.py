@@ -52,6 +52,7 @@ class RRSIGContext(nagiosplugin.Context):
 
 
 class RRSIGExpitationContext(nagiosplugin.Context):
+class RRSIGExpirationContext(nagiosplugin.Context):
     def __init__(
         self,
         name,
@@ -299,7 +300,7 @@ def main():
         DNS(args.domain, args.insecure_is_ok),
         DNSSECContext("dnssec"),
         RRSIGContext("rrsig"),
-        RRSIGExpitationContext(
+        RRSIGExpirationContext(
             "rrsig_expiration",
             warn_seconds=args.expire_warn * 60 * 60,
             crit_seconds=args.expire_crit * 60 * 60,
