@@ -133,7 +133,6 @@ class DNS(nagiosplugin.Resource):
         self.dlv_domain = None
 
     def probe(self):
-        _log.debug(f'Starting probing for "{self.domain}"')
         a = dnsviz.commands.probe.BulkAnalyst(
             self.rdclass,
             self.try_ipv4,
