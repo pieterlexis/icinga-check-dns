@@ -22,21 +22,26 @@ _log = logging.getLogger("nagiosplugin")
 class DNSSECContext(nagiosplugin.Context):
     def evaluate(self, metric, resource):
         delegation = metric.value.get("delegation")
-        if delegation["status"] > status.DELEGATION_STATUS_SECURE:
-            if delegation["status"] == status.DELEGATION_STATUS_BOGUS:
+        delegation_status = delegation.get("status")
+
+        if delegation_status is None:
+            return nagiosplugin.Result(
+                nagiosplugin.Critical, "Delegation is INCOMPLETE", metric
+            )
+
+        if delegation_status > status.DELEGATION_STATUS_SECURE:
+            if delegation_status == status.DELEGATION_STATUS_BOGUS:
                 return nagiosplugin.Result(
                     nagiosplugin.Critical, "Delegation is BOGUS", metric
                 )
-            if delegation["status"] == status.DELEGATION_STATUS_INSECURE:
+            if delegation_status == status.DELEGATION_STATUS_INSECURE:
                 if resource.insecure_ok:
                     return nagiosplugin.Result(
                         nagiosplugin.Ok, "Delegation is INSECURE", metric
                     )
             return nagiosplugin.Result(
                 nagiosplugin.Warn,
-                "Delegation is {}".format(
-                    status.delegation_status_mapping[delegation["status"]]
-                ),
+                f"Delegation is {status.delegation_status_mapping[delegation_status]}",
                 metric,
             )
         return nagiosplugin.Result(nagiosplugin.Ok, "Delegation is SECURE", metric)
