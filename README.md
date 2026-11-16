@@ -16,7 +16,7 @@ $CHECK_DNS_PATH/venv/bin/python3 -m pip install icinga-check-dns
 
 After installing, the plugin is available under the path `$CHECK_DNS_PATH/venv/bin/check_dns.py` for use with the monitoring tool of your choice.
 
-If you prefer to keep all your plugins in your preferred distribution's standard path, e.g. `/usr/lib64/nagios/plugins` for RedHat-like distributions, you can symlink the `check_dhs.py` script there:
+If you prefer to keep all your plugins in your preferred distribution's standard path, e.g. `/usr/lib64/nagios/plugins` for RedHat-like distributions, you can symlink the `check_dns.py` script there:
 
 ```
 ln -sf /opt/check-dns/venv/bin/check_dns.py /usr/lib64/nagios/plugins
